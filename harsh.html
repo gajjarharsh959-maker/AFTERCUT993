@@ -1,0 +1,412 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartoon Dots and Boxes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #8be9fd;
+            --panel-bg: #f8f8f2;
+            --p1-color: #ff79c6;
+            --p2-color: #50fa7b;
+            --text-color: #282a36;
+            --border-color: #282a36;
+            --dot-color: #44475a;
+            --line-hover: #e2e2e2;
+        }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-image: radial-gradient(#ffffff33 15%, transparent 16%);
+            background-size: 30px 30px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #ffb86c;
+            text-shadow: 3px 3px 0px var(--border-color);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--panel-bg);
+            border: 4px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 8px 8px 0px var(--border-color);
+        }
+
+        /* Screens */
+        .menu-screen, .game-screen { display: none; }
+        .active-screen { display: block; }
+
+        /* Buttons */
+        button {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            margin: 10px;
+            border: 3px solid var(--border-color);
+            border-radius: 15px;
+            background-color: #f1fa8c;
+            color: var(--text-color);
+            cursor: pointer;
+            box-shadow: 0px 6px 0px var(--border-color);
+            transition: all 0.1s ease-in-out;
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0px 0px 0px var(--border-color);
+        }
+
+        button.btn-p1 { background-color: var(--p1-color); color: white; }
+        button.btn-p2 { background-color: var(--p2-color); }
+
+        /* Scoreboard & Status */
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+        
+        .score-box {
+            padding: 10px 20px;
+            border: 3px solid var(--border-color);
+            border-radius: 15px;
+            box-shadow: 4px 4px 0px var(--border-color);
+            background: white;
+        }
+
+        #p1-score-box { color: var(--p1-color); }
+        #p2-score-box { color: var(--p2-color); }
+
+        #status {
+            font-size: 1.5rem;
+            margin: 10px 0 20px 0;
+            padding: 10px;
+            border-radius: 10px;
+            border: 3px dashed var(--border-color);
+            background: #fff;
+        }
+
+        /* Game Grid */
+        .board-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #game-board {
+            display: grid;
+            /* 4 boxes = 5 dots. 5 dots (20px) + 4 lines (60px) */
+            grid-template-columns: repeat(4, 20px 60px) 20px;
+            grid-template-rows: repeat(4, 20px 60px) 20px;
+            gap: 2px;
+            background-color: #fff;
+            padding: 15px;
+            border: 4px solid var(--border-color);
+            border-radius: 15px;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+        }
+
+        /* Grid Elements */
+        .dot {
+            width: 20px;
+            height: 20px;
+            background-color: var(--dot-color);
+            border-radius: 50%;
+        }
+
+        .line {
+            background-color: transparent;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 10px;
+        }
+
+        .line.h-line { height: 20px; width: 100%; }
+        .line.v-line { width: 20px; height: 100%; }
+
+        .line:not(.claimed):hover { background-color: var(--line-hover); }
+        
+        .line.claimed.p1 { background-color: var(--p1-color); cursor: default; }
+        .line.claimed.p2 { background-color: var(--p2-color); cursor: default; }
+
+        .box {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .box.p1 { background-color: rgba(255, 121, 198, 0.5); }
+        .box.p2 { background-color: rgba(80, 250, 123, 0.5); }
+        
+        .box-text {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 2px 2px 0px var(--border-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>DOTS & BOXES!</h1>
+
+    <div class="container">
+        <div id="menuScreen" class="menu-screen active-screen">
+            <h2>Select Game Mode</h2>
+            <p>Connect dots to make lines. Complete a box to score a point and get an extra turn!</p>
+            <button class="btn-p1" onclick="startGame('2p')">2 Players (Local)</button>
+            <button class="btn-p2" onclick="startGame('pc')">VS Computer</button>
+        </div>
+
+        <div id="gameScreen" class="game-screen">
+            <div class="scoreboard">
+                <div class="score-box" id="p1-score-box">Player 1: <span id="p1-score">0</span></div>
+                <div class="score-box" id="p2-score-box"><span id="p2-name">Player 2</span>: <span id="p2-score">0</span></div>
+            </div>
+
+            <div id="status">Player 1's Turn!</div>
+            
+            <div class="board-container">
+                <div id="game-board"></div>
+            </div>
+
+            <button onclick="resetToMenu()">Quit to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        const GRID_SIZE = 4; // 4x4 boxes
+        let mode = '2p'; 
+        let currentPlayer = 1;
+        let scores = { 1: 0, 2: 0 };
+        let linesState = {}; // Tracks claimed lines: 'h-0-0': 1 (player 1)
+        let boxesState = []; // Tracks boxes and their 4 lines
+        let gameOver = false;
+
+        function startGame(selectedMode) {
+            mode = selectedMode;
+            document.getElementById('p2-name').innerText = mode === 'pc' ? 'Computer' : 'Player 2';
+            document.getElementById('menuScreen').classList.remove('active-screen');
+            document.getElementById('gameScreen').classList.add('active-screen');
+            initGame();
+        }
+
+        function resetToMenu() {
+            document.getElementById('gameScreen').classList.remove('active-screen');
+            document.getElementById('menuScreen').classList.add('active-screen');
+        }
+
+        function initGame() {
+            currentPlayer = 1;
+            scores = { 1: 0, 2: 0 };
+            linesState = {};
+            boxesState = [];
+            gameOver = false;
+            updateScoreboard();
+            updateStatus();
+            buildBoard();
+        }
+
+        function buildBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            
+            // Grid is (GRID_SIZE * 2 + 1) rows and columns
+            const totalCells = (GRID_SIZE * 2) + 1;
+
+            for (let r = 0; r < totalCells; r++) {
+                for (let c = 0; c < totalCells; c++) {
+                    const isEvenRow = r % 2 === 0;
+                    const isEvenCol = c % 2 === 0;
+                    
+                    const cell = document.createElement('div');
+
+                    if (isEvenRow && isEvenCol) {
+                        // Dot
+                        cell.className = 'dot';
+                    } else if (isEvenRow && !isEvenCol) {
+                        // Horizontal Line
+                        let hId = `h-${r/2}-${Math.floor(c/2)}`;
+                        cell.className = 'line h-line';
+                        cell.id = hId;
+                        linesState[hId] = 0; // 0 means unclaimed
+                        cell.onclick = () => handleLineClick(hId);
+                    } else if (!isEvenRow && isEvenCol) {
+                        // Vertical Line
+                        let vId = `v-${Math.floor(r/2)}-${c/2}`;
+                        cell.className = 'line v-line';
+                        cell.id = vId;
+                        linesState[vId] = 0;
+                        cell.onclick = () => handleLineClick(vId);
+                    } else {
+                        // Box
+                        let boxR = Math.floor(r/2);
+                        let boxC = Math.floor(c/2);
+                        cell.className = 'box';
+                        cell.id = `box-${boxR}-${boxC}`;
+                        
+                        // Register box and its required lines
+                        boxesState.push({
+                            id: cell.id,
+                            lines: [
+                                `h-${boxR}-${boxC}`,     // Top
+                                `h-${boxR+1}-${boxC}`,   // Bottom
+                                `v-${boxR}-${boxC}`,     // Left
+                                `v-${boxR}-${boxC+1}`    // Right
+                            ],
+                            owner: 0
+                        });
+                    }
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function handleLineClick(lineId) {
+            if (gameOver || linesState[lineId] !== 0) return;
+            if (mode === 'pc' && currentPlayer === 2) return; // Wait for PC
+
+            processMove(lineId);
+        }
+
+        function processMove(lineId) {
+            // Claim the line
+            linesState[lineId] = currentPlayer;
+            const lineEl = document.getElementById(lineId);
+            lineEl.classList.add('claimed', currentPlayer === 1 ? 'p1' : 'p2');
+
+            // Check for completed boxes
+            let boxCompleted = false;
+
+            boxesState.forEach(box => {
+                if (box.owner === 0) {
+                    // Check if all 4 lines of this box are claimed
+                    let linesClaimed = box.lines.filter(id => linesState[id] !== 0).length;
+                    if (linesClaimed === 4) {
+                        box.owner = currentPlayer;
+                        scores[currentPlayer]++;
+                        boxCompleted = true;
+                        
+                        // Visually update the box
+                        const boxEl = document.getElementById(box.id);
+                        boxEl.classList.add(currentPlayer === 1 ? 'p1' : 'p2');
+                        boxEl.innerHTML = `<div class="box-text">P${currentPlayer}</div>`;
+                    }
+                }
+            });
+
+            updateScoreboard();
+
+            // Check Win Condition
+            if (scores[1] + scores[2] === GRID_SIZE * GRID_SIZE) {
+                gameOver = true;
+                let msg = scores[1] > scores[2] ? "Player 1 WINS!" : 
+                          scores[2] > scores[1] ? (mode === 'pc' ? "Computer WINS!" : "Player 2 WINS!") : 
+                          "It's a TIE!";
+                document.getElementById('status').innerText = msg + " 🎉";
+                return;
+            }
+
+            // If a box was completed, player gets another turn. Otherwise, switch turns.
+            if (!boxCompleted) {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+
+            updateStatus();
+
+            // PC Turn
+            if (mode === 'pc' && currentPlayer === 2 && !gameOver) {
+                setTimeout(computerTurn, 800);
+            }
+        }
+
+        function computerTurn() {
+            if (gameOver) return;
+
+            // Simple AI Logic
+            let availableLines = Object.keys(linesState).filter(id => linesState[id] === 0);
+            if (availableLines.length === 0) return;
+
+            let chosenLine = null;
+
+            // 1. Can we complete a box right now? (Look for a box with 3 lines)
+            for (let box of boxesState) {
+                if (box.owner === 0) {
+                    let claimedLines = box.lines.filter(id => linesState[id] !== 0);
+                    if (claimedLines.length === 3) {
+                        // Find the 1 empty line
+                        chosenLine = box.lines.find(id => linesState[id] === 0);
+                        break;
+                    }
+                }
+            }
+
+            // 2. If no box can be completed, try to pick a safe line (doesn't give opponent 3 lines)
+            if (!chosenLine) {
+                let safeLines = availableLines.filter(line => {
+                    // If we pick this line, does it make any box have 3 lines?
+                    let isSafe = true;
+                    for (let box of boxesState) {
+                        if (box.owner === 0 && box.lines.includes(line)) {
+                            let currentClaimed = box.lines.filter(id => linesState[id] !== 0).length;
+                            if (currentClaimed === 2) {
+                                isSafe = false; // Picking this makes it 3, giving it to the player
+                                break;
+                            }
+                        }
+                    }
+                    return isSafe;
+                });
+
+                if (safeLines.length > 0) {
+                    chosenLine = safeLines[Math.floor(Math.random() * safeLines.length)];
+                } else {
+                    // No safe lines left, just pick a random one
+                    chosenLine = availableLines[Math.floor(Math.random() * availableLines.length)];
+                }
+            }
+
+            if (chosenLine) {
+                processMove(chosenLine);
+            }
+        }
+
+        function updateScoreboard() {
+            document.getElementById('p1-score').innerText = scores[1];
+            document.getElementById('p2-score').innerText = scores[2];
+        }
+
+        function updateStatus() {
+            const statusBox = document.getElementById('status');
+            if (mode === 'pc' && currentPlayer === 2) {
+                statusBox.innerText = "Computer is thinking...";
+                statusBox.style.color = 'var(--p2-color)';
+            } else {
+                statusBox.innerText = `Player ${currentPlayer}'s Turn! Draw a line.`;
+                statusBox.style.color = currentPlayer === 1 ? 'var(--p1-color)' : 'var(--p2-color)';
+            }
+        }
+    </script>
+</body>
+</html>
